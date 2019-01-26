@@ -1,7 +1,7 @@
 package mcchat.packets.serialization
 
-import mcchat.packets.helpers.nullTerminate
-import mcchat.packets.helpers.terminateWith
+import helpers.nullTerminate
+import helpers.terminateWith
 
 internal fun Byte.serialize(): ByteArray {
     return byteArrayOf(this)

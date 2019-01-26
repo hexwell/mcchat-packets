@@ -1,7 +1,7 @@
 package mcchat.packets.serialization
 
-import mcchat.packets.helpers.readByte
-import mcchat.packets.helpers.readUntil
+import helpers.readByte
+import helpers.readUntil
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 

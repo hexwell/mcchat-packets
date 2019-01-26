@@ -1,4 +1,4 @@
-package mcchat.packets.helpers
+package helpers
 
 import java.io.IOException
 import java.io.InputStream
