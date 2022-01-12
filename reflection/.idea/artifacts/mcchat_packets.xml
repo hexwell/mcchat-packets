@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="mcchat-packets">
+    <output-path>$PROJECT_DIR$/out/artifacts/mcchat_packets</output-path>
+    <root id="archive" name="mcchat-packets.jar">
+      <element id="module-output" name="mcchat-packets" />
+    </root>
+  </artifact>
+</component>
