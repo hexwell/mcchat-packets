@@ -1,7 +1,0 @@
-I want the following versions of mcchat-packets:
-  - kt definition + manual serialization
-  - annotated kt definition + runtime reflective serialization
-  - annotated kt definition + generated serialization (KSP + kotlinpoet)
-  - yaml definition + generated serialization (kotlinpoet)
-
-- java annotation processing?
