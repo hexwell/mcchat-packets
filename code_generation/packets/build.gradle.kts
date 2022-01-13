@@ -14,7 +14,10 @@ dependencies {
 }
 
 ksp {
-    arg("package", "mcchat.packets")
+    val base = "mcchat.packets"
+
+    arg("package", base)
+    arg("sub_package", "$base.serialization")
 }
 
 kotlin {

@@ -1,9 +1,7 @@
 package net.hexwell.packets
 
 import com.google.devtools.ksp.processing.*
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.toTypeName
@@ -12,8 +10,36 @@ import java.io.OutputStream
 
 private fun OutputStream.log(str: String) = write("$str\n".toByteArray())
 
+private fun KSTypeReference.qualifiedName(): String {
+    return resolve()
+        .declaration
+        .qualifiedName!!
+        .asString()
+}
+
+private fun KSAnnotation.qualifiedName(): String = annotationType.qualifiedName()
+
+private inline fun <reified T> Resolver.find(): Map<KSType, KSFunctionDeclaration> {
+    return getSymbolsWithAnnotation(T::class.qualifiedName!!)
+        .filterIsInstance<KSFunctionDeclaration>()
+        .associateBy { it
+            .annotations
+            .find { it.qualifiedName() == T::class.qualifiedName!! }!!
+            .annotationType
+            .element!!
+            .typeArguments
+            .first()
+            .type!!
+            .resolve()
+        }
+}
+
 @KotlinPoetKspPreview
-class Processor(private val codeGenerator: CodeGenerator, private val pkg: String) : SymbolProcessor {
+class Processor(
+    private val codeGenerator: CodeGenerator,
+    private val pkg: String,
+    private val subpkg: String
+) : SymbolProcessor {
     private var invoked = false
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -36,27 +62,35 @@ class Processor(private val codeGenerator: CodeGenerator, private val pkg: Strin
             .getSymbolsWithAnnotation(Packet::class.qualifiedName!!)
             .filterIsInstance<KSClassDeclaration>()
 
-        log.log("Found packets: ${ packets.toList() }")
+        log.log("found packets: ${ packets.toList() }")
 
         val fields = resolver
             .getSymbolsWithAnnotation(Field::class.qualifiedName!!)
             .filterIsInstance<KSPropertyDeclaration>()
 
-        log.log("Found fields: ${ fields.toList() }")
+        log.log("found fields: ${ fields.toList() }")
+
+        val serializers = resolver.find<Serializer<*>>()
+
+        log.log("found serializers: $serializers")
+
+        val deserializers = resolver.find<Deserializer<*>>()
+
+        log.log("found deserializers: $deserializers")
 
         val functions = packets
             .map {
                 log.log("creating serializer for $it")
 
-                val properties = it.getAllProperties()
+                val properties = it.getAllProperties().map(KSPropertyDeclaration::simpleName)
 
                 val pfields = fields
-                    .filter { properties.contains(it) }
+                    .filter { properties.contains(it.simpleName) }
                     .sortedBy {
                         @Suppress("UNCHECKED_CAST")
                         it
                             .annotations
-                            .find { it.shortName.asString() == Field::class.simpleName }!!
+                            .find { it.qualifiedName() == Field::class.qualifiedName }!!
                             .arguments
                             .first()
                             .value!! as Comparable<Any>
@@ -70,12 +104,23 @@ class Processor(private val codeGenerator: CodeGenerator, private val pkg: Strin
                         .asType(emptyList())
                         .toTypeName()
                     )
-                    .addCode(CodeBlock.of("println(this)"))
+                    .apply {
+                        pfields.forEach {
+                            addCode(CodeBlock.of(
+                                "println(${serializers[it.type.resolve()]!!.simpleName.asString()}(this.${it.simpleName.asString()}).toList())\n"
+                            ))
+                        }
+                    }
                     .build()
             }
 
         val file = FileSpec
             .builder(pkg, "Serialization")
+            .apply {
+                serializers.values.forEach {
+                    addImport(subpkg, it.simpleName.asString())
+                }
+            }
             .apply { functions.forEach(::addFunction) }
             .build()
 
@@ -90,6 +135,10 @@ class Processor(private val codeGenerator: CodeGenerator, private val pkg: Strin
 @KotlinPoetKspPreview
 class ProcessorProvider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-        return Processor(environment.codeGenerator, environment.options["package"]!!)
+        return Processor(
+            environment.codeGenerator,
+            environment.options["package"]!!,
+            environment.options["sub_package"]!!
+        )
     }
 }

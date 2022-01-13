@@ -2,17 +2,21 @@ package mcchat.packets.serialization
 
 import helpers.nullTerminate
 import helpers.terminateWith
+import net.hexwell.packets.Serializer
 
-internal fun Byte.serialize(): ByteArray {
-    return byteArrayOf(this)
+@Serializer<Byte>
+internal fun serialize(byte: Byte): ByteArray {
+    return byteArrayOf(byte)
 }
 
-internal fun String.serialize(): ByteArray {
-    return this.toByteArray().nullTerminate()
+@Serializer<String>
+internal fun serialize(string: String): ByteArray {
+    return string.toByteArray().nullTerminate()
 }
 
-internal fun Array<out String>.serialize(): ByteArray {
-    return this
+@Serializer<Array<out String>>
+internal fun serialize(stringArray: Array<out String>): ByteArray {
+    return stringArray
         .map { it.toByteArray().nullTerminate() }
         .fold(byteArrayOf(), ByteArray::plus)
         .terminateWith(4)

@@ -2,24 +2,28 @@ package mcchat.packets.serialization
 
 import helpers.readByte
 import helpers.readUntil
+import net.hexwell.packets.Deserializer
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 
-internal fun InputStream.deserializeByte(): Byte {
-    return this.readByte()
+@Deserializer<Byte>
+internal fun deserializeByte(input: InputStream): Byte {
+    return input.readByte()
 }
 
-internal fun InputStream.deserializeString(): String {
-    return String(this.readUntil(0))
+@Deserializer<String>
+internal fun deserializeString(input: InputStream): String {
+    return String(input.readUntil(0))
 }
 
-internal fun InputStream.deserializeStringArray(): Array<out String> {
-    val temp = ByteArrayInputStream(readUntil(4))
+@Deserializer<Array<out String>>
+internal fun deserializeStringArray(input: InputStream): Array<out String> {
+    val temp = ByteArrayInputStream(input.readUntil(4))
 
     val data = mutableListOf<String>()
 
     while (temp.available() != 0) {
-        data.add(temp.deserializeString())
+        data.add(deserializeString(temp))
     }
 
     return data.toTypedArray()
