@@ -8,3 +8,8 @@
 **/.idea/**/workspace.xml
 **/.idea/uiDesigner.xml
 **/.idea/misc.xml
+
+# Gradle
+**/.gradle/
+**/gradle/
+**/build/
