@@ -2,6 +2,7 @@ package mcchat.packets
 
 import net.hexwell.packets.Field
 
+// Workaround for https://github.com/google/ksp/issues/794
 typealias Pkt = net.hexwell.packets.Packet
 
 sealed class Packet
