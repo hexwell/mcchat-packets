@@ -31,5 +31,8 @@ inline fun <reified A> KSAnnotated.findAnnotation(): KSAnnotation? = annotations
     .find { it.qualifiedName() == A::class.qualifiedName!! }
 
 @Suppress("UNCHECKED_CAST")
-fun <A, R> KSAnnotation.getArgument(property: KProperty1<A, R>) = arguments
+fun <A, R> KSAnnotation.getArgument(property: KProperty1<A, R>): R? = arguments
     .find { it.name!!.asString() == property.name }?.value as R?
+
+inline fun <reified A, R> KSAnnotated.getAnnotationArgument(property: KProperty1<A, R>): R? =
+    findAnnotation<A>()?.getArgument(property)
