@@ -3,8 +3,8 @@ pluginManagement {
     val kspVersion: String by settings
 
     plugins {
-        id("com.google.devtools.ksp") version kspVersion
         kotlin("jvm") version kotlinVersion
+        id("com.google.devtools.ksp") version kspVersion
     }
 
     repositories {
