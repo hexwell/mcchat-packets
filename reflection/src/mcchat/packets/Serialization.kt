@@ -13,12 +13,8 @@ import kotlin.reflect.typeOf
 
 // TODO Consider replacing reflection with code generation (define packets as lists of pairs (<name> to <type>::class) and ancestors to inherit from)
 
-class Parser(private val input: InputStream) : Iterator<Packet?> {
-    override fun hasNext(): Boolean {
-        return input.available() > 0
-    }
-
-    override fun next(): Packet {
+class Parser(private val input: InputStream) {
+    fun next(): Packet {
         val opcode = input.readByte()
 
         @Suppress("UNCHECKED_CAST")
