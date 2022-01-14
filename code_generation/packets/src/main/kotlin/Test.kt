@@ -1,9 +1,12 @@
 import mcchat.packets.*
+import java.io.ByteArrayInputStream
 
 fun main() {
-    InfoPacket(0).serialize()
+    println(InfoPacket(0).serialize().toList())
 
-    MessagePacket("", "", "").serialize()
+    println(MessagePacket("", "", "").serialize().toList())
 
-    MessagePacket("", "", "").serialize()
+    println(MessagePacket("", "", "").serialize().toList())
+
+    println(Parser(ByteArrayInputStream(byteArrayOf(0, 0))).next())
 }

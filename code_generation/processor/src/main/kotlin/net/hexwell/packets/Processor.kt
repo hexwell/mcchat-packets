@@ -2,15 +2,14 @@ package net.hexwell.packets
 
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import helpers.findAnnotation
 import helpers.getAnnotationArgument
 import helpers.getSymbolsWithAnnotationAs
+import java.io.InputStream
 import java.io.OutputStream
 
 private fun OutputStream.log(str: String) = write("$str\n".toByteArray())
@@ -68,7 +67,7 @@ class Processor(
 
         log.log("Found deserializers: $deserializers")
 
-        val functions = packets
+        val serializingFunctions = packets
             .map { (opcode, packet) ->
                 log.log("Creating serializer for $packet")
 
@@ -86,12 +85,15 @@ class Processor(
                         .asType(emptyList())
                         .toTypeName()
                     )
-                    .addCode(CodeBlock.of("println(byteArrayOf($opcode).toList())\n"))
+                    .returns(ByteArray::class)
+                    .addCode("return byteArrayOf(%L)", opcode)
                     .apply {
                         packetFields.forEach {
-                            addCode(CodeBlock.of(
-                                "println(${serializers[it.type.resolve()]!!.simpleName.asString()}(this.${it.simpleName.asString()}).toList())\n"
-                            ))
+                            addCode(
+                                " + %N(this.%N)",
+                                serializers[it.type.resolve()]!!.simpleName.asString(),
+                                it.simpleName.asString()
+                            )
                         }
                     }
                     .build()
@@ -100,11 +102,68 @@ class Processor(
         val file = FileSpec
             .builder(pkg, "Serialization")
             .apply {
-                serializers.values.forEach {
+                (serializers.values + deserializers.values).forEach {
                     addImport(subpkg, it.simpleName.asString())
                 }
             }
-            .apply { functions.forEach(::addFunction) }
+            .apply { serializingFunctions.forEach(::addFunction) }
+            .addType(TypeSpec
+                .classBuilder("Parser")
+                .primaryConstructor(FunSpec
+                    .constructorBuilder()
+                    .addParameter("input", InputStream::class)
+                    .build()
+                )
+                .addProperty(PropertySpec
+                    .builder("input", InputStream::class, KModifier.PRIVATE)
+                    .initializer("input")
+                    .build()
+                )
+                .addFunction(FunSpec
+                    .builder("next")
+                    .returns(resolver
+                        .getSymbolsWithAnnotationAs<Base, KSClassDeclaration>()
+                        .first()
+                        .asType(emptyList())
+                        .toTypeName()
+                    )
+                    .addStatement(
+                        "val opcode = %N(input)",
+                        deserializers
+                            .toList()
+                            .find { it
+                                .first
+                                .declaration
+                                .qualifiedName!!
+                                .asString() == Byte::class.qualifiedName!!
+                            }!!
+                            .second
+                            .simpleName
+                            .asString()
+                    )
+                    .beginControlFlow("return when (opcode.toInt())")
+                    .apply {
+                        packets.forEach { (opcode, packet) ->
+                            val arguments = packet
+                                .getAllProperties()
+                                .map {
+                                    "${ deserializers[it.type.resolve()]!!.simpleName.asString() }(input)"
+                                }
+                                .joinToString()
+
+                            addStatement(
+                                "%L -> %N($arguments)",
+                                opcode,
+                                packet.simpleName.asString()
+                            )
+                        }
+                    }
+                    .addStatement("else -> throw IllegalArgumentException(\"No packet with opcode \\\"\$opcode\\\" is defined\")")
+                    .endControlFlow()
+                    .build()
+                )
+                .build()
+            )
             .build()
 
         file.writeTo(codeGenerator, false)

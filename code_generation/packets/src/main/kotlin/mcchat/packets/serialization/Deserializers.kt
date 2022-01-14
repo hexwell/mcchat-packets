@@ -2,6 +2,7 @@ package mcchat.packets.serialization
 
 import helpers.readByte
 import helpers.readUntil
+import mcchat.packets.TopicListPacket
 import net.hexwell.packets.Deserializer
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -18,7 +19,7 @@ internal fun deserializeString(input: InputStream): String {
 
 @Deserializer<Array<out String>>
 internal fun deserializeStringArray(input: InputStream): Array<out String> {
-    val temp = ByteArrayInputStream(input.readUntil(4))
+    val temp = ByteArrayInputStream(input.readUntil(TopicListPacket.TERMINATOR))
 
     val data = mutableListOf<String>()
 
