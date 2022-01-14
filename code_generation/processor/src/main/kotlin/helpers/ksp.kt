@@ -5,6 +5,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSTypeReference
+import kotlin.reflect.KProperty1
 
 inline fun <reified A> Resolver.getSymbolsWithAnnotation(): Sequence<KSAnnotated> =
     getSymbolsWithAnnotation(A::class.qualifiedName!!)
@@ -28,3 +29,7 @@ fun KSAnnotation.qualifiedName(): String = annotationType.qualifiedName()
 
 inline fun <reified A> KSAnnotated.findAnnotation(): KSAnnotation? = annotations
     .find { it.qualifiedName() == A::class.qualifiedName!! }
+
+@Suppress("UNCHECKED_CAST")
+fun <A, R> KSAnnotation.getArgument(property: KProperty1<A, R>) = arguments
+    .find { it.name!!.asString() == property.name }?.value as R?

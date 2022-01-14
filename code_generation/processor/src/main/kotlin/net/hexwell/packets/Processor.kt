@@ -9,6 +9,7 @@ import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import helpers.findAnnotation
+import helpers.getArgument
 import helpers.getSymbolsWithAnnotationAs
 import java.io.OutputStream
 
@@ -51,12 +52,7 @@ class Processor(
 
         val packets = resolver
             .getSymbolsWithAnnotationAs<Packet, KSClassDeclaration>()
-            .associateBy { it
-                .findAnnotation<Packet>()!!
-                .arguments
-                .first()
-                .value as Byte
-            }
+            .associateBy { it.findAnnotation<Packet>()!!.getArgument(Packet::opcode)!! }
 
         log.log("Found packets: $packets")
 
@@ -80,14 +76,7 @@ class Processor(
 
                 val packetFields = allFields
                     .filter { properties.contains(it.simpleName) }
-                    .sortedBy {
-                        @Suppress("UNCHECKED_CAST")
-                        it
-                            .findAnnotation<Field>()!!
-                            .arguments
-                            .first()
-                            .value!! as Comparable<Any>
-                    }
+                    .sortedBy { it.findAnnotation<Field>()!!.getArgument(Field::position)!! }
 
                 log.log("  fields of packet: ${ packetFields.toList() }")
 
