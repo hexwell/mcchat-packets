@@ -1,6 +1,6 @@
 plugins {
-    id("com.google.devtools.ksp")
     kotlin("jvm")
+    id("com.google.devtools.ksp")
 }
 
 repositories {

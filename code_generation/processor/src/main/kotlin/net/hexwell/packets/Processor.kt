@@ -1,5 +1,6 @@
 package net.hexwell.packets
 
+import com.google.auto.service.AutoService
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
 import com.squareup.kotlinpoet.*
@@ -175,6 +176,7 @@ class Processor(
 }
 
 @KotlinPoetKspPreview
+@AutoService(SymbolProcessorProvider::class)
 class ProcessorProvider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
         return Processor(
