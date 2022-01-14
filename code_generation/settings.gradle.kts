@@ -12,5 +12,5 @@ pluginManagement {
     }
 }
 
-include(":packets")
 include(":processor")
+include(":packets")
