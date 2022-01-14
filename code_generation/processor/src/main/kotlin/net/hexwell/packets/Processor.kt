@@ -2,29 +2,22 @@ package net.hexwell.packets
 
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
+import helpers.findAnnotation
+import helpers.getSymbolsWithAnnotationAs
 import java.io.OutputStream
 
 private fun OutputStream.log(str: String) = write("$str\n".toByteArray())
 
-private fun KSTypeReference.qualifiedName(): String {
-    return resolve()
-        .declaration
-        .qualifiedName!!
-        .asString()
-}
-
-private fun KSAnnotation.qualifiedName(): String = annotationType.qualifiedName()
-
-private inline fun <reified T> Resolver.find(): Map<KSType, KSFunctionDeclaration> {
-    return getSymbolsWithAnnotation(T::class.qualifiedName!!)
-        .filterIsInstance<KSFunctionDeclaration>()
+private inline fun <reified A> Resolver.find(): Map<KSType, KSFunctionDeclaration> =
+    getSymbolsWithAnnotationAs<A, KSFunctionDeclaration>()
         .associateBy { it
-            .annotations
-            .find { it.qualifiedName() == T::class.qualifiedName!! }!!
+            .findAnnotation<A>()!!
             .annotationType
             .element!!
             .typeArguments
@@ -32,7 +25,6 @@ private inline fun <reified T> Resolver.find(): Map<KSType, KSFunctionDeclaratio
             .type!!
             .resolve()
         }
-}
 
 @KotlinPoetKspPreview
 class Processor(
@@ -43,9 +35,8 @@ class Processor(
     private var invoked = false
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        if (invoked) {
+        if (invoked)
             return emptyList()
-        }
 
         invoked = true
 
@@ -56,56 +47,59 @@ class Processor(
             "log"
         )
 
-        log.log("processor started (pkg = $pkg)")
+        log.log("Processor started (pkg = $pkg, subpkg = $subpkg)")
 
         val packets = resolver
-            .getSymbolsWithAnnotation(Packet::class.qualifiedName!!)
-            .filterIsInstance<KSClassDeclaration>()
+            .getSymbolsWithAnnotationAs<Packet, KSClassDeclaration>()
+            .associateBy { it
+                .findAnnotation<Packet>()!!
+                .arguments
+                .first()
+                .value as Byte
+            }
 
-        log.log("found packets: ${ packets.toList() }")
+        log.log("Found packets: $packets")
 
-        val fields = resolver
-            .getSymbolsWithAnnotation(Field::class.qualifiedName!!)
-            .filterIsInstance<KSPropertyDeclaration>()
+        val allFields = resolver.getSymbolsWithAnnotationAs<Field, KSPropertyDeclaration>()
 
-        log.log("found fields: ${ fields.toList() }")
+        log.log("Found fields: ${ allFields.toList() }")
 
         val serializers = resolver.find<Serializer<*>>()
 
-        log.log("found serializers: $serializers")
+        log.log("Found serializers: $serializers")
 
         val deserializers = resolver.find<Deserializer<*>>()
 
-        log.log("found deserializers: $deserializers")
+        log.log("Found deserializers: $deserializers")
 
         val functions = packets
-            .map {
-                log.log("creating serializer for $it")
+            .map { (opcode, packet) ->
+                log.log("Creating serializer for $packet")
 
-                val properties = it.getAllProperties().map(KSPropertyDeclaration::simpleName)
+                val properties = packet.getAllProperties().map(KSPropertyDeclaration::simpleName)
 
-                val pfields = fields
+                val packetFields = allFields
                     .filter { properties.contains(it.simpleName) }
                     .sortedBy {
                         @Suppress("UNCHECKED_CAST")
                         it
-                            .annotations
-                            .find { it.qualifiedName() == Field::class.qualifiedName }!!
+                            .findAnnotation<Field>()!!
                             .arguments
                             .first()
                             .value!! as Comparable<Any>
                     }
 
-                log.log("  fields of packet: ${ pfields.toList() }")
+                log.log("  fields of packet: ${ packetFields.toList() }")
 
                 FunSpec
                     .builder("serialize")
-                    .receiver(it
+                    .receiver(packet
                         .asType(emptyList())
                         .toTypeName()
                     )
+                    .addCode(CodeBlock.of("println(byteArrayOf($opcode).toList())\n"))
                     .apply {
-                        pfields.forEach {
+                        packetFields.forEach {
                             addCode(CodeBlock.of(
                                 "println(${serializers[it.type.resolve()]!!.simpleName.asString()}(this.${it.simpleName.asString()}).toList())\n"
                             ))
@@ -126,7 +120,7 @@ class Processor(
 
         file.writeTo(codeGenerator, false)
 
-        log.log("file 'Serialization.kt' created")
+        log.log("File 'Serialization.kt' created")
 
         return emptyList()
     }
