@@ -23,6 +23,9 @@ ksp {
 
 kotlin {
     sourceSets.main {
-        kotlin.srcDir("build/generated/ksp/main/kotlin")
+        kotlin.srcDirs(
+            "src/main/kotlin",
+            "build/generated/ksp/main/kotlin"
+        )
     }
 }
