@@ -14,13 +14,6 @@ dependencies {
     ksp(project(":processor"))
 }
 
-ksp {
-    val base = "mcchat.packets"
-
-    arg("package", base)
-    arg("sub_package", "$base.serialization")
-}
-
 kotlin {
     sourceSets.main {
         kotlin.srcDirs(

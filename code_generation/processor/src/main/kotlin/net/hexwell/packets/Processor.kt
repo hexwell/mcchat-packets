@@ -28,11 +28,7 @@ private inline fun <reified A> Resolver.find(): Map<KSType, KSFunctionDeclaratio
         }
 
 @KotlinPoetKspPreview
-class Processor(
-    private val codeGenerator: CodeGenerator,
-    private val pkg: String,
-    private val subpkg: String
-) : SymbolProcessor {
+class Processor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
     private var invoked = false
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -48,7 +44,7 @@ class Processor(
             "log"
         )
 
-        log.log("Processor started (pkg = $pkg, subpkg = $subpkg)")
+        log.log("Processor started")
 
         val packets = resolver
             .getSymbolsWithAnnotationAs<Packet, KSClassDeclaration>()
@@ -100,8 +96,12 @@ class Processor(
                     .build()
             }
 
+        val base = resolver
+            .getSymbolsWithAnnotationAs<Base, KSClassDeclaration>()
+            .first()
+
         val file = FileSpec
-            .builder(pkg, FILE_NAME)
+            .builder(base.packageName.asString(), FILE_NAME)
             .apply {
                 (serializers.values + deserializers.values).forEach {
                     addImport(it.packageName.asString(), it.simpleName.asString())
@@ -122,9 +122,7 @@ class Processor(
                 )
                 .addFunction(FunSpec
                     .builder("next")
-                    .returns(resolver
-                        .getSymbolsWithAnnotationAs<Base, KSClassDeclaration>()
-                        .first()
+                    .returns(base
                         .asType(emptyList())
                         .toTypeName()
                     )
@@ -188,10 +186,6 @@ class Processor(
 @AutoService(SymbolProcessorProvider::class)
 class ProcessorProvider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-        return Processor(
-            environment.codeGenerator,
-            environment.options["package"]!!,
-            environment.options["sub_package"]!!
-        )
+        return Processor(environment.codeGenerator)
     }
 }

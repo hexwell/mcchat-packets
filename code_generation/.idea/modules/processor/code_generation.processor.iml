@@ -3,7 +3,6 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../../processor">
-      <sourceFolder url="file://$MODULE_DIR$/../../../processor/build/generated/ksp/main/resources" type="java-resource" />
       <excludeFolder url="file://$MODULE_DIR$/../../../processor/.gradle" />
       <excludeFolder url="file://$MODULE_DIR$/../../../processor/build" />
     </content>
