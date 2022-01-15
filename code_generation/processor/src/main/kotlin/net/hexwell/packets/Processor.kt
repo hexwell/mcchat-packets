@@ -101,10 +101,10 @@ class Processor(
             }
 
         val file = FileSpec
-            .builder(pkg, "Serialization")
+            .builder(pkg, FILE_NAME)
             .apply {
                 (serializers.values + deserializers.values).forEach {
-                    addImport(subpkg, it.simpleName.asString())
+                    addImport(it.packageName.asString(), it.simpleName.asString())
                 }
             }
             .apply { serializingFunctions.forEach(::addFunction) }
@@ -112,12 +112,12 @@ class Processor(
                 .classBuilder("Parser")
                 .primaryConstructor(FunSpec
                     .constructorBuilder()
-                    .addParameter("input", InputStream::class)
+                    .addParameter(PARSER_INPUT_PROPERTY_NAME, PARSER_INPUT_PROPERTY_TYPE)
                     .build()
                 )
                 .addProperty(PropertySpec
-                    .builder("input", InputStream::class, KModifier.PRIVATE)
-                    .initializer("input")
+                    .builder(PARSER_INPUT_PROPERTY_NAME, PARSER_INPUT_PROPERTY_TYPE, KModifier.PRIVATE)
+                    .initializer(PARSER_INPUT_PROPERTY_NAME)
                     .build()
                 )
                 .addFunction(FunSpec
@@ -129,26 +129,28 @@ class Processor(
                         .toTypeName()
                     )
                     .addStatement(
-                        "val opcode = %N(input)",
+                        "val %N = %N(%N)",
+                        OPCODE_VARIABLE_NAME,
                         deserializers
-                            .toList()
+                            .entries
                             .find { it
-                                .first
+                                .key
                                 .declaration
                                 .qualifiedName!!
                                 .asString() == Byte::class.qualifiedName!!
                             }!!
-                            .second
+                            .value
                             .simpleName
-                            .asString()
+                            .asString(),
+                        PARSER_INPUT_PROPERTY_NAME
                     )
-                    .beginControlFlow("return when (opcode.toInt())")
+                    .beginControlFlow("return when (%N.toInt())", OPCODE_VARIABLE_NAME)
                     .apply {
                         packets.forEach { (opcode, packet) ->
                             val arguments = packet
                                 .getAllProperties()
                                 .map {
-                                    "${ deserializers[it.type.resolve()]!!.simpleName.asString() }(input)"
+                                    "${ deserializers[it.type.resolve()]!!.simpleName.asString() }($PARSER_INPUT_PROPERTY_NAME)"
                                 }
                                 .joinToString()
 
@@ -159,7 +161,7 @@ class Processor(
                             )
                         }
                     }
-                    .addStatement("else -> throw IllegalArgumentException(\"No packet with opcode \\\"\$opcode\\\" is defined\")")
+                    .addStatement("else -> throw IllegalArgumentException(\"No packet with opcode \\\"\$$OPCODE_VARIABLE_NAME\\\" is defined\")")
                     .endControlFlow()
                     .build()
                 )
@@ -169,9 +171,16 @@ class Processor(
 
         file.writeTo(codeGenerator, false)
 
-        log.log("File 'Serialization.kt' created")
+        log.log("File '$FILE_NAME.kt' created")
 
         return emptyList()
+    }
+
+    companion object {
+        private const val FILE_NAME = "Serialization"
+        private const val PARSER_INPUT_PROPERTY_NAME = "input"
+        private val PARSER_INPUT_PROPERTY_TYPE = InputStream::class
+        private const val OPCODE_VARIABLE_NAME = "opcode"
     }
 }
 

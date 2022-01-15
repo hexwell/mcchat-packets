@@ -25,10 +25,8 @@ fun KSTypeReference.qualifiedName(): String =
         .qualifiedName!!
         .asString()
 
-fun KSAnnotation.qualifiedName(): String = annotationType.qualifiedName()
-
 inline fun <reified A> KSAnnotated.findAnnotation(): KSAnnotation? = annotations
-    .find { it.qualifiedName() == A::class.qualifiedName!! }
+    .find { it.annotationType.qualifiedName() == A::class.qualifiedName!! }
 
 @Suppress("UNCHECKED_CAST")
 fun <A, R> KSAnnotation.getArgument(property: KProperty1<A, R>): R? = arguments
