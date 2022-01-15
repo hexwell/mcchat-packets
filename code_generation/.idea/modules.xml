@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/code_generation.iml" filepath="$PROJECT_DIR$/.idea/modules/code_generation.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/code_generation.main.iml" filepath="$PROJECT_DIR$/.idea/modules/code_generation.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/packets/code_generation.packets.iml" filepath="$PROJECT_DIR$/.idea/modules/packets/code_generation.packets.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/packets/code_generation.packets.main.iml" filepath="$PROJECT_DIR$/.idea/modules/packets/code_generation.packets.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/packets/code_generation.packets.test.iml" filepath="$PROJECT_DIR$/.idea/modules/packets/code_generation.packets.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/processor/code_generation.processor.iml" filepath="$PROJECT_DIR$/.idea/modules/processor/code_generation.processor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/processor/code_generation.processor.main.iml" filepath="$PROJECT_DIR$/.idea/modules/processor/code_generation.processor.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/processor/code_generation.processor.test.iml" filepath="$PROJECT_DIR$/.idea/modules/processor/code_generation.processor.test.iml" />
+    </modules>
+  </component>
+</project>
