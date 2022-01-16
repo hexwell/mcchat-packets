@@ -87,7 +87,7 @@ class Processor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
                     .apply {
                         packetFields.forEach {
                             addCode(
-                                " + %N(this.%N)",
+                                " + %N(%N)",
                                 serializers[it.type.resolve()]!!.simpleName.asString(),
                                 it.simpleName.asString()
                             )
