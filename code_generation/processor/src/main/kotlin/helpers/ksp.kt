@@ -17,10 +17,12 @@ fun KSTypeReference.qualifiedName(): String =
     resolve()
         .declaration
         .let {
-            if (it is KSTypeAlias)
-                it.type.resolve().declaration
-            else
-                it
+            var decl = it
+
+            while (decl is KSTypeAlias)
+                decl = decl.type.resolve().declaration
+
+            decl
         }
         .qualifiedName!!
         .asString()
