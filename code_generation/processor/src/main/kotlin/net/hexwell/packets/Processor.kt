@@ -13,8 +13,6 @@ import helpers.getSymbolsWithAnnotationAs
 import java.io.InputStream
 import java.io.OutputStream
 
-private fun OutputStream.log(str: String) = write("$str\n".toByteArray())
-
 private inline fun <reified A> Resolver.find(): Map<KSType, KSFunctionDeclaration> =
     getSymbolsWithAnnotationAs<A, KSFunctionDeclaration>()
         .associateBy { it
@@ -28,7 +26,7 @@ private inline fun <reified A> Resolver.find(): Map<KSType, KSFunctionDeclaratio
         }
 
 @KotlinPoetKspPreview
-class Processor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
+class Processor(private val codeGenerator: CodeGenerator, private val logger: KSPLogger) : SymbolProcessor {
     private var invoked = false
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -37,36 +35,29 @@ class Processor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
 
         invoked = true
 
-        val log = codeGenerator.createNewFile(
-            Dependencies(false),
-            "",
-            "processor",
-            "log"
-        )
-
-        log.log("Processor started")
+        logger.info("Processor started")
 
         val packets = resolver
             .getSymbolsWithAnnotationAs<Packet, KSClassDeclaration>()
             .associateBy { it.getAnnotationArgument(Packet::opcode)!! }
 
-        log.log("Found packets: $packets")
+        logger.info("Found packets: $packets")
 
         val allFields = resolver.getSymbolsWithAnnotationAs<Field, KSPropertyDeclaration>()
 
-        log.log("Found fields: ${ allFields.toList() }")
+        logger.info("Found fields: ${ allFields.toList() }")
 
         val serializers = resolver.find<Serializer<*>>()
 
-        log.log("Found serializers: $serializers")
+        logger.info("Found serializers: $serializers")
 
         val deserializers = resolver.find<Deserializer<*>>()
 
-        log.log("Found deserializers: $deserializers")
+        logger.info("Found deserializers: $deserializers")
 
         val serializingFunctions = packets
             .map { (opcode, packet) ->
-                log.log("Creating serializer for $packet")
+                logger.info("Creating serializer for $packet")
 
                 val properties = packet.getAllProperties().map(KSPropertyDeclaration::simpleName)
 
@@ -74,7 +65,7 @@ class Processor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
                     .filter { properties.contains(it.simpleName) }
                     .sortedBy { it.getAnnotationArgument(Field::position)!! }
 
-                log.log("  fields of packet: ${ packetFields.toList() }")
+                logger.info("  fields of packet: ${ packetFields.toList() }")
 
                 FunSpec
                     .builder("serialize")
@@ -169,7 +160,7 @@ class Processor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
 
         file.writeTo(codeGenerator, false)
 
-        log.log("File '$FILE_NAME.kt' created")
+        logger.info("File '$FILE_NAME.kt' created")
 
         return emptyList()
     }
@@ -186,6 +177,6 @@ class Processor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
 @AutoService(SymbolProcessorProvider::class)
 class ProcessorProvider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-        return Processor(environment.codeGenerator)
+        return Processor(environment.codeGenerator, environment.logger)
     }
 }
