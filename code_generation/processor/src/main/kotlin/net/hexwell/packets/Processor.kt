@@ -11,7 +11,6 @@ import helpers.findAnnotation
 import helpers.getAnnotationArgument
 import helpers.getSymbolsWithAnnotationAs
 import java.io.InputStream
-import java.io.OutputStream
 
 private inline fun <reified A> Resolver.find(): Map<KSType, KSFunctionDeclaration> =
     getSymbolsWithAnnotationAs<A, KSFunctionDeclaration>()
